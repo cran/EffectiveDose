@@ -1,0 +1,197 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[ansinew]{inputenc}
+\usepackage{exscale, amssymb, amsmath}
+\usepackage{latexsym}
+\usepackage{varioref}
+\usepackage{floatflt}
+\flushbottom
+\pagestyle{empty}
+
+\title{`EffectiveDose'- Version 1.0-5\\ Estimation of the Effective Dose including Bootstrap confidence intervals in R}
+\author{Regine Scheder}
+
+% \VignetteIndexEntry{An R Package to estimate the effective dose level}
+
+
+\begin{document}
+\maketitle
+\section{Introduction}
+To analyze the effects of a chemical drug, the dose-response relationship is studied in  pharmacology or toxicology. The determination of the effective dose level is an important issue in this context. In  quantal bioassay experiments $m$ different subjects are treated with different drug doses, and it is observed if the subject reacts or not. So the  response of these experiments is binary or quantal, which means either the drug takes effect and the subject has a reaction or not. The dose-response curve describes the probability of success or response of the analyzed drug.
+Traditionally, parametric models like the probit or logit model are used to estimate the dose response curve
+$$p(x)=P(Y=1|X=x)=1-P(Y=0|X=x).$$
+The effective dose level for a given $\alpha$ is obtained by 
+$${\rm ED}_\alpha = p^{-1}(\alpha)$$
+for an increasing probability function $p$.
+Parametric models suffer from the drawback that the specific parametric form has to be known. In many applications the specific structure is not evident, then nonparametric methods come into play. \\
+The R-package 'EffectiveDose' is an implementation of the nonparametric estimate of the effective dose in quantal bioassay developed by Dette, Neumeyer, and Pilz (2005). In Section \ref{2} the nonparametric estimate is introduced and the method for the bootstrap confidence intervals is explained. In the following section the usage and functionality of the package is discussed in detail. Finally in Section \ref{4}, the accuracy of the Bootstrap confidence intervals is scrutinized. 
+
+
+
+
+\section{The nonparametric estimate and Bootstrap confidence intervals} \label{2}
+
+
+Dette et al. (2005) proposed a strictly increasing estimator for the effective dose level ${\rm ED}_\alpha$, which is  a combination of a
+regression and an integrate  kernel density estimate. First of all, the dose-response curve is estimated by local linear techniques, i.e. the
+weighted sum of squares
+\begin{eqnarray}\label{LL}
+\sum_{i=1}^m\{Y_i-\beta_0-\beta_1(x_i-x) \}^2K\left(\frac{x_i-x}{h} \right)
+\end{eqnarray}
+is minimized with respect to the parameters $\beta_0$ and $\beta_1$. Here  $K$ is a kernel function and $h$  denotes a bandwidth, which
+converges to $0$ with increasing sample size. The resulting estimate is given by $\hat{p}_{LL}(x)=\hat{\beta}_0$ if $(\hat{\beta}_0,
+\hat{\beta}_1)$ minimizes the equation (\ref{LL}). As in the last two sections this estimate is not necessarily monotone in $x$. 
+The estimate of the effective dose level is obtained by applying a method to $\hat{p}_{LL}$ which deals simultaneously with this lack and the issue of inversion. Precisely, we define the effective dose level estimate for $\alpha \in (0,1)$ by
+\begin{eqnarray} \label{est}
+\hat{p}_{I}^{-1}(\alpha)=\hat{p}_I^{-1}(\alpha):=\frac{1}{Nh_d} \sum_{i=1}^N \int_{-\infty}^\alpha K_d \left(\frac{
+\hat{p}_{LL}(\frac{i}{N})-u}{h_d} \right)du,
+\end{eqnarray}
+where the kernel $K_d$ is positive, symmetric, twice continuously differentiable, and supported on $[-1,1]$. The corresponding bandwidth $h_d$
+converges to 0 with increasing sample size $m$. A detailed discussion of this estimate and its asymptotic behavior can be found in Dette et al. (2005).\\
+In order to obtain confidence intervals for the effective dose level $\hat{p}_I^{-1}(\alpha)$, we suggest Bootstrap confidence intervals. Since the asymptotic distribution of  $\hat{p}_I^{-1}$ contains unknown quantities like the second derivative of $p$, Bootstrap methods are often preferred.  In this package, we apply a wild bootstrap method. We start to compute the residuals
+ $$\hat{\varepsilon}_j=Y_j-\hat{p}_I(x_j),$$
+ where $\hat{p}_I$ is the inverse of  $\hat{p}_I^{-1}$ and by the way a strictly monotone estimate of the dose-response function $p$. We draw random variables $\varepsilon_j^\ast$ with zero mean and variances $\hat{\varepsilon}_j^2$ for each iteration. Additionally, we assume that
+ $$P(\varepsilon_j^\ast=-\hat{\varepsilon}_j)=P(\varepsilon_j^\ast=+\hat{\varepsilon}_j)=1/2.$$
+With these randomly drawn $\varepsilon_j^\ast$, we construct a new data set by replacing $Y_j$ with $\hat{p}_I(x_j)+\varepsilon_j^\ast$. Using this new data set, the effective dose level $\hat{p}^{\ast-1}_I(\alpha)$ is computed as described above. Then for each iteration, $|\hat{p}_I^{-1}(\alpha)-\hat{p}^{\ast -1}_I(\alpha)|$ is calculated. For a given confidence level $\beta$, the corresponding quantile $t_\beta$ of $|\hat{p}_I^{-1}(\alpha)-\hat{p}^{\ast -1}_I(\alpha)|$ over all iteration is used to give the following confidence interval
+$$(\hat{p}_I^{-1}(\alpha)-t_\beta, \hat{p}_I^{-1}(\alpha)+t_\beta).$$
+
+\section{How to use `EffectiveDose'} \label{3}
+The package {\tt EffectiveDose} contains functions to calculate the effective dose levels and Bootstrap confidence intervals. The function {\tt ED} can be applied to {\tt list}, {\tt locfit}, and {\tt locpoly} objects. The output of this function is an object of class {\tt fitED}. The usage of this function is as follows. First of all, we start the package and generate data of a binary response model with a Normal distribution function as success probability. 
+<<>>=
+library(EffectiveDose)
+ybin=function(x){
+        n=length(x)
+        y=numeric(n)
+        p=pnorm(x, mean=0.5, sd=0.5)
+        for(i in 1:n){
+        y[i]=rbinom(1,1,prob=p[i])
+        }
+        return(y)
+}
+
+x=seq(0,1,length.out=50) 
+y=ybin(x)                             
+@
+The function {\tt ED} can be used for a list object, where the data is combined. In this case within the function {\tt ED} a local linear estimate is fitted to the orginial data. This interim estimator is used to obtain an estimate for the effective dose. The user can adjust the local linear estimator himself and fit a local linear estimate using the functions {\tt locfit} or {\tt locpoly}. In this way, the local linear method inside of the effective dose estimate can be controlled. This may be interesting for a more sophisticated user. We refer to the {\tt locfit} package about the specific options of the {\tt locfit} function. 
+<<>>=
+fit=locfit(y~lp(x,deg=1, h=0.1, nn=0)) 
+fit2=locpoly(x,y, degree=1, bandwidth=0.1) 
+
+res=ED(list(x,y), alpha=seq(0.2,0.8, length.out=40)) 
+res2=ED(fit, alpha=seq(0.2,0.8, length.out=40))
+res3=ED(fit2, alpha=seq(0.2,0.8, length.out=40)) 
+@
+Beside the first argument which is the  {\tt list}, {\tt locfit}, or {\tt locpoly} object, the argument {\tt alpha} specifies the $\alpha$ values where the effective dose is to be computed. Additionally, there are the arguments {\tt bandwidth}, {\tt N}, {\tt mono}, and {\tt type} for further specification. The arguments {\tt bandwidth} and {\tt N} are utilized for the monotonizing inversion [see (\ref{est})]. If the values are missing, the function {\tt ED} uses a rule of thumb for the bandwidth and the default value 101 for {\tt N}. The argument {\tt mono} comes into play if the underlying model has a decreasing dose-response curve, e.g. in toxicology. For such setups the effective dose level {\rm ED$\alpha$} is in fact $p^{-1}(1-\alpha)$, such that the effective dose levels are again monotone increasing. The function {\tt ED} returns  $p^{-1}(1-\alpha)$ as effective dose level in this case. 
+We demonstrate this in an example. 
+<<>>=
+toxdata=data.frame(conc=c(0.000,0.220, 0.355, 0.444, 0.887), matured=c(12,7,8,2,0), total=c(12,8,11,11,11))
+
+with(toxdata, ED(list(x=conc, y=matured/total), alpha=c(0.1,0.2,0.5,0.8,0.9), mono="decreasing")) 
+@
+Using the argument {\tt type}, it is possible to treat continuous data like frequencies. Default value is {\tt cont}, but the value {\tt prob} allows to compute $0<\alpha<1$ quantiles for continuous data. \\
+For objects of the class {\tt fitED}, it is possible to compute an Akaike's Information Criterion (aic), but only if the slot {\tt fitold} is assigned with a {\tt list} or {\tt locfit} object. In this cases, the function {\tt aic.ED.locfit} computes the Akaike's Information Criterion in a similar way as the function {\tt aic} in the {\tt locfit} package. This value gives a rough impression of the goodness of fit. The function {\tt aic.ED.locfit} can help to adjust the arguments of the function {\tt ED} and to define the local linear estimate. \\
+The function {\tt Boot.CI} is applied in a similar manner as the function {\tt ED}, but the confidence bands are computed for only one $\alpha$ value per time. Furthermore the confidence level can be specified using the argument {\tt level}. The argument {\tt R} fixes the number of Bootstrap replications. The default value is R=100. Since the accuracy of the Bootstrap confidence interval might be problematic, the function {\tt Boot.CI} gives a warning if the the estimate of the dose-response function is too flat. See the help page of {\tt Boot.CI} for an example. 
+
+
+\section{Simulation study  about the accuracy of the Bootstrap confidence intervals}\label{4}
+In this section, we present a small simulation study about the accuracy of the Bootstrap confidence intervals. A binary response model is considered with $8$ different shapes for the dose-response function $p$. In particular, we investigate the functions
+\begin{eqnarray}\label{mod1}
+p_1(x)&=& \Phi \left(\frac{x-\mu}{\sigma} \right),~~~ \mu=.5, \sigma =.5 \\
+&& \nonumber \\
+ \label{mod2}
+p_2(x)&=& \Phi \left(\frac{x-\mu}{\sigma} \right), ~~~\mu=.5, \sigma =.1\\
+&& \nonumber \\
+\label{mod3}
+p_3(x)&=& 1- \exp \{-x^ \gamma\}, \gamma=.52876\\
+&& \nonumber \\
+\label{mod4} p_4(x)&=& \eta \Phi \left(\frac{x-\mu_1}{\tau} \right) +(1- \eta) \Phi \left(\frac{x-\mu_2}{\tau} \right), \\ \nonumber
+&&  ~~~~~~\mu_1=0.4, \mu_2=1.0, \eta=.64946, \tau=.13546 \\
+&& \nonumber \\
+\label{mod5}
+p_5 (x)&=& \frac{1}{2}+\frac{1}{\pi} \arctan \left ( \frac{x-\mu}{\sigma}\right), ~~~ \mu=0.15, \sigma=0.05\\
+&& \nonumber \\
+\label{mod6} p'_6(x)&=& \frac{\Gamma(\alpha+\beta)}{\Gamma(\alpha) \Gamma(\beta)} (1-x)^{\beta-1} x^{\alpha-1},
+ ~~~~~~ \alpha=2, \beta=3.\\ && \nonumber \\
+\label{mod7}
+p_7(x)&=& (1+\exp (5-15x))^{-1}\\ && \nonumber \\
+\label{mod8} p_8(x)&=& \left \{\begin{array}{ll} 2x &  {\rm if}~~ 0 \leq x \leq 0.3 \\ 0.4x+0.48 &  {\rm if}~~ 0.3 \leq x \leq 0.8 \\ x & {\rm
+if}~~ 0.8 \leq x \leq 1 \end{array}\right.
+\end{eqnarray}
+Exemplarily for the dose-response function $p_1$, we show how the simulation study can be done using the EffectiveDose Package. First, we simulate the data. Analyzing the different ways to apply the {\tt EffectiveDose} package, the function {\tt Boot.CI} is used to calculate the confidence intervals for $10$ different $\alpha$ values for a {\tt list}, {\tt locfit}, and {\tt locpoly} objects. At the end, we check for each interval if the true value is inside of the interval or not. 
+
+<<eval=FALSE>>=
+m=1000
+s=10
+alpha=seq(0.1,0.9, length.out=s)
+
+
+ybeob=function(x){
+	p=pnorm(x, mean=0.5, sd=0.5)
+	y=rbinom(1,1,prob=p)
+}
+
+qinv=qnorm(alpha, mean=0.5, sd=0.5)
+
+
+res=matrix(nrow=m, ncol=s)
+res2=matrix(nrow=m, ncol=s)
+res3=matrix(nrow=m, ncol=s)
+
+for(r in 1:m){
+for(l in 1:s){
+x=seq(0,1,length.out=50)
+n=length(x)
+y=numeric(n)
+for(i in 1:n){
+y[i]=ybeob(x[i])
+}
+
+fit=locfit(y~lp(x,deg=1, h=0.1, nn=0))  
+fit2=locpoly(x,y, degree=1, bandwidth=0.1)
+
+W=Boot.CI(list(x,y), alpha=alpha[l], bandwidth=0.1)
+W2=Boot.CI(fit,alpha=alpha[l], bandwidth=0.1)
+W3=Boot.CI(fit2,alpha=alpha[l], bandwidth=0.1)
+
+res[r,l]=(qinv[l]>W@CI[1])&(qinv[l]<W@CI[2])
+res2[r,l]=(qinv[l]>W2@CI[1])&(qinv[l]<W2@CI[2])
+res3[r,l]=(qinv[l]>W3@CI[1])&(qinv[l]<W3@CI[2])
+}
+}
+
+apply(res,2,mean)
+apply(res2,2,mean)
+apply(res3,2,mean)
+@
+
+
+\begin{figure}[htbp]
+\begin{center}
+\includegraphics{BootCI}
+\end{center}
+\caption{\it Accuracy level for the Bootstrap confidence interval with confidence level .95 and 1000 simulation runs using the function {\tt Boot.CI} for the dose-response functions (\ref{mod1})-(\ref{mod8}). The straight line corresponds to the accuracy level of the fit with the list object, the dashed line to the locfit object, and the dotted line to the locpoly object.}\label{prob}
+\end{figure}
+
+
+
+{\large {\bf Acknowledgements}}
+The author would like to thank Christian Ritz and Holger Dette for helpful comments and suggestions for the implementation of this package.
+
+
+
+\vskip 0.5cm
+
+
+{\large {\bf References}}
+
+\vskip 0.5cm
+
+H. Dette, K.F. Pilz, N. Neumeyer (2005). A note on nonparametric estimation of the effective doses in bioassay. J. Amer. Statist. Assoc., 100, no 470, 503-510.
+
+\vskip 0.5cm
+
+H. Dette, R. Scheder (2008). Finite sample properties of nonparametric estimates of the effective dose in quantal bioassay. Technical report, Department of Mathematics.
+
+http://www.ruhr-uni-bochum.de/mathematik3/preprint.htm
+
+\end{document}
+

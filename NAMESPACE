@@ -1,0 +1,18 @@
+import("stats")
+importFrom("graphics", "plot", "lines")
+importClasses("locfit")
+export("ED")
+export("mono.1d")
+export("Boot.CI")
+export("locpoly")
+export("aic.ED.locfit")
+exportClasses("fitED")
+exportClasses("ED.Boot.CI")
+exportClasses("locpoly")
+exportClasses("locfit")
+exportMethods(
+	"plot",
+	"lines",
+	"print",
+	"show"
+	)
