@@ -15,6 +15,7 @@ Objects can be created by calls of the form \code{new("fitED", ...)}.
     \item{\code{alpha}:}{Object of class \code{"numeric"}. Alpha-values where the effective dose levels is computed.}
     \item{\code{ED}:}{Object of class \code{"numeric"}. The levels of the Effective dose corresponding to the alpha-values.}
     \item{\code{call}:}{Object of class \code{"call"}.  The call of the function \code{"ED"} for this object.}
+     \item{\code{fitold}:}{Object of class \code{"fitprob"}.  The object on which the function \code{"ED"} was applied.}
   }
 }
 \section{Methods}{

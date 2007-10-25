@@ -15,7 +15,7 @@ Package: \tab EffectiveDose\cr
 Type: \tab Package\cr
 Version: \tab 1.0\cr
 Date: \tab 2007-10-25\cr
-License: \tab GPL (version 2 or later)\cr
+License: \tab GPL (>=2)\cr
 }
 For the common binary response model, a nonparametric estimate for the effective dose level is implemented including bootstrap confidence intervals. The estimate is obtained by the composition of a nonparametric estimate of the quantile response curve and a classical density estimate. 
 }
@@ -29,10 +29,5 @@ Maintainer: Regine Scheder <regine.scheder@rub.de>
 }
 
 \keyword{ package }
-\seealso{
-A related package
- \code{\link[<monoProc>:<monoProc>-package]{<monoProc>}} 
-}
-\examples{
 
-}
+

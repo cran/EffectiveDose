@@ -62,7 +62,7 @@ fit2=locpoly(x,y, degree=1, bandwidth=0.1) #fits a local linear estimate for the
 
 #the effective dose level is estimated through 3 different ways.  
 res=ED(list(x,y), alpha=seq(0.2,0.8, length.out=40)) #a list is used and internally the function locfit
-res2=ED(fit, alpha=seq(0.2,0.8, length.out=40)) #the function ED is applied to a personally adjusted \code{locfit} object
+res2=ED(fit, alpha=seq(0.2,0.8, length.out=40)) #the function ED is applied to a personally adjusted locfit object
 res3=ED(fit2, alpha=seq(0.2,0.8, length.out=40)) #the function ED is applied to a personally adjusted locpoly object
 
 #To display the results 

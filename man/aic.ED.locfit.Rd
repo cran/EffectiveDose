@@ -46,7 +46,7 @@ fit=locfit(y~lp(x,deg=1, h=0.1, nn=0))   #fits a local linear estimate for the s
 
 aic(fit)
 res=ED(list(x,y), alpha=seq(0.2,0.8, length.out=40)) #a list is used and internally the function locfit
-res2=ED(fit, alpha=seq(0.2,0.8, length.out=40)) #the function ED is applied to a personally adjusted \code{locfit} object
+res2=ED(fit, alpha=seq(0.2,0.8, length.out=40)) #the function ED is applied to a personally adjusted locfit object
 
 aic.ED.locfit(res)
 aic.ED.locfit(res2)
